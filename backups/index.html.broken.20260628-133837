@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>MWI DAB Radio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>📻 MWI DAB Radio</h1>
+      <div class="sub">Digitaler DAB+-Stream von Michael Willner</div>
+
+      <div class="now" id="now">Noch kein Sender gewählt</div>
+      <div class="text" id="stationText"></div>
+      <div class="status" id="status">Bereit.</div>
+
+      <audio id="player" controls autoplay>
+        <source src="{{ stream_url }}" type="audio/mpeg">
+      </audio>
+
+      <div class="toolbar">
+        <button class="secondary" onclick="reloadPlayer()">🔄 Player neu laden</button>
+        <button class="secondary" onclick="refreshStatus()">📡 Status aktualisieren</button>
+        <button class="secondary" onclick="stopRadio()">■ Stop</button>
+      </div>
+
+      <div class="grid">
+        {% for s in stations %}
+        <button id="station-{{ loop.index0 }}" onclick="playStation({{ loop.index0 }})">
+          {{ s.label }}
+        </button>
+        {% endfor %}
+      </div>
+
+      <div class="footer">
+        MWI DAB Server · Raspberry Pi Zero 2 W · uGreen DAB Board · Icecast
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

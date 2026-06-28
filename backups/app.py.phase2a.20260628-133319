@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+import threading
+
+from flask import Flask, jsonify, render_template
+
+from config import ICECAST_URL, FLASK_HOST, FLASK_PORT
+from services.radio import load_stations, tune_station, shutdown_radio, get_station_text
+from services.stream import start_stream, stop_stream, stream_status
+
+app = Flask(__name__)
+
+radio_lock = threading.Lock()
+current_station = None
+
+
+@app.route("/")
+def index():
+    return render_template(
+        "index.html",
+        stations=load_stations(),
+        stream_url=ICECAST_URL,
+    )
+
+
+@app.route("/api/status")
+def api_status():
+    return jsonify({
+        "current": current_station,
+        "stream": ICECAST_URL,
+        "stream_status": stream_status(),
+        "station_text": get_station_text(waittime=1) if current_station else "",
+    })
+
+
+@app.route("/api/play/<int:index>", methods=["POST"])
+def api_play(index):
+    global current_station
+
+    try:
+        stations = load_stations()
+
+        if index < 0 or index >= len(stations):
+            return jsonify({"ok": False, "error": "Ungültiger Sender"}), 400
+
+        station = stations[index]
+
+        with radio_lock:
+            stop_stream()
+            tune_station(station)
+            start_stream()
+            current_station = station
+
+        return jsonify({
+            "ok": True,
+            "station": station,
+            "stream": ICECAST_URL,
+        })
+
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "error": str(exc),
+        }), 500
+
+
+@app.route("/api/stop", methods=["POST"])
+def api_stop():
+    global current_station
+
+    with radio_lock:
+        stop_stream()
+        shutdown_radio()
+        current_station = None
+
+    return jsonify({"ok": True})
+
+
+if __name__ == "__main__":
+    app.run(host=FLASK_HOST, port=FLASK_PORT, threaded=False)

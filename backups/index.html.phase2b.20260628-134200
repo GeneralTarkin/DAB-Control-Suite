@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>MWI DAB Radio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --gold:#ffd34d; --gold2:#ffe27a; --card:rgba(20,20,20,.84); }
+* { box-sizing:border-box; }
+body {
+    margin:0; min-height:100vh;
+    background: radial-gradient(circle at top, #242424 0%, #070707 68%);
+    color:var(--gold); font-family: Arial, Helvetica, sans-serif;
+}
+.wrap { max-width:1100px; margin:0 auto; padding:38px 18px; }
+.card {
+    background:var(--card); border:1px solid rgba(255,211,77,.28);
+    border-radius:24px; box-shadow:0 0 38px rgba(0,0,0,.66);
+    padding:28px;
+}
+h1 { text-align:center; font-size:42px; margin:8px 0 5px; }
+.sub { text-align:center; color:#fff3b0; margin-bottom:24px; }
+.now { text-align:center; font-size:24px; color:#fff; margin:18px 0; }
+.meta { text-align:center; color:#fff3b0; min-height:24px; margin-bottom:8px; }
+.status { text-align:center; color:#ddd; font-size:14px; min-height:20px; }
+audio { width:100%; margin:18px 0 24px; }
+.toolbar { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin:10px 0 22px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top:20px; }
+button {
+    background:var(--gold); color:#111; border:0; border-radius:13px;
+    padding:13px 15px; font-weight:bold; cursor:pointer; font-size:15px;
+    box-shadow:0 4px 12px rgba(0,0,0,.35);
+}
+button:hover { background:var(--gold2); }
+button.secondary { background:#333; color:var(--gold); border:1px solid rgba(255,211,77,.3); }
+button.secondary:hover { background:#444; }
+button.active { outline:3px solid rgba(255,255,255,.45); background:#fff1a6; }
+.footer { text-align:center; color:#aaa; margin-top:25px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>📻 MWI DAB Radio</h1>
+    <div class="sub">Digitaler DAB+-Stream von Michael Willner</div>
+
+    <div class="now" id="now">Noch kein Sender gewählt</div>
+    <div class="meta" id="meta"></div>
+    <div class="status" id="status">Bereit.</div>
+
+    <audio id="player" controls autoplay>
+      <source src="{{ stream_url }}" type="audio/mpeg">
+    </audio>
+
+    <div class="toolbar">
+      <button class="secondary" onclick="reloadPlayer()">🔄 Player neu laden</button>
+      <button class="secondary" onclick="refreshStatus()">📡 Status aktualisieren</button>
+      <button class="secondary" onclick="stopRadio()">■ Stop</button>
+    </div>
+
+    <div class="grid">
+      {% for s in stations %}
+      <button id="station-{{ loop.index0 }}" onclick="playStation({{ loop.index0 }})">{{ s.label }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="footer">
+      MWI DAB Server · Raspberry Pi Zero 2 W · uGreen DAB Board · Icecast
+    </div>
+  </div>
+</div>
+
+<script>
+function setStatus(text) {
+    document.getElementById("status").innerText = text;
+}
+
+function markActive(id) {
+    document.querySelectorAll(".grid button").forEach(b => b.classList.remove("active"));
+    const btn = document.getElementById("station-" + id);
+    if (btn) btn.classList.add("active");
+}
+
+function reloadPlayer() {
+    const audio = document.getElementById("player");
+    const source = audio.querySelector("source");
+    source.src = "{{ stream_url }}?t=" + Date.now();
+    audio.load();
+    audio.play().catch(() => {});
+}
+
+async function playStation(id) {
+    setStatus("Starte Sender...");
+    try {
+        const res = await fetch("/api/play/" + id, {method: "POST"});
+        const data = await res.json();
+
+        if (!data.ok) {
+            setStatus("Fehler: " + (data.error || "unbekannt"));
+            return;
+        }
+
+        document.getElementById("now").innerText = data.station.label;
+        markActive(id);
+        reloadPlayer();
+        setStatus("Läuft.");
+        setTimeout(refreshStatus, 1500);
+    } catch (e) {
+        setStatus("Fehler: " + e);
+    }
+}
+
+async function stopRadio() {
+    setStatus("Stoppe...");
+    await fetch("/api/stop", {method: "POST"});
+    document.getElementById("now").innerText = "Noch kein Sender gewählt";
+    document.getElementById("meta").innerText = "";
+    document.querySelectorAll(".grid button").forEach(b => b.classList.remove("active"));
+    setStatus("Gestoppt.");
+}
+
+async function refreshStatus() {
+    try {
+        const res = await fetch("/api/status?t=" + Date.now());
+        const data = await res.json();
+
+        if (data.current && data.current.label) {
+            document.getElementById("now").innerText = data.current.label;
+        }
+
+        if (data.metadata) {
+            const txt = data.metadata.station_text || "";
+            const dig = data.metadata.digrad_status || {};
+            const ens = data.metadata.ensemble_info || {};
+
+            let parts = [];
+            if (txt) parts.push(txt);
+            if (ens.label) parts.push("Ensemble: " + ens.label);
+            if (dig.rssi !== undefined) parts.push("RSSI: " + dig.rssi);
+            if (dig.snr !== undefined) parts.push("SNR: " + dig.snr);
+            if (dig.FIC_quality !== undefined) parts.push("FIC: " + dig.FIC_quality + "%");
+
+            document.getElementById("meta").innerText = parts.join(" · ");
+        }
+
+        setStatus(data.stream_status && data.stream_status.running ? "Läuft." : "Bereit.");
+    } catch (e) {
+        setStatus("Statusfehler: " + e);
+    }
+}
+
+setInterval(refreshStatus, 5000);
+refreshStatus();
+</script>
+</body>
+</html>

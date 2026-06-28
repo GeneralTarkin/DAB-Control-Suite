@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>MWI DAB Server</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+    --gold:#ffd34d;
+    --gold2:#ffe27a;
+    --bg:#070707;
+    --card:rgba(20,20,20,.86);
+    --line:rgba(255,211,77,.28);
+}
+* { box-sizing:border-box; }
+body {
+    margin:0; min-height:100vh;
+    background: radial-gradient(circle at top, #292929 0%, #070707 70%);
+    color:var(--gold);
+    font-family: Arial, Helvetica, sans-serif;
+}
+.wrap { max-width:1180px; margin:0 auto; padding:34px 18px; }
+.card {
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:0 0 38px rgba(0,0,0,.7);
+    padding:26px;
+}
+h1 { text-align:center; font-size:42px; margin:6px 0 4px; }
+.sub { text-align:center; color:#fff3b0; margin-bottom:22px; }
+.dashboard {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:18px;
+    margin:18px 0 22px;
+}
+.panel {
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:rgba(0,0,0,.28);
+    padding:18px;
+}
+.now { font-size:28px; color:#fff; margin-bottom:14px; font-weight:bold; }
+.text { font-size:20px; color:#fff3b0; min-height:54px; line-height:1.35; }
+.small { color:#ddd; font-size:14px; margin-top:8px; }
+.metric { margin:12px 0; }
+.metric-row { display:flex; justify-content:space-between; color:#fff; margin-bottom:5px; }
+.bar {
+    height:13px;
+    border-radius:999px;
+    background:#333;
+    overflow:hidden;
+}
+.fill {
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, #8a6b00, var(--gold));
+    transition:width .4s ease;
+}
+.badge {
+    display:inline-block;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:7px 12px;
+    margin:4px;
+    color:#fff3b0;
+    background:rgba(0,0,0,.25);
+}
+audio { width:100%; margin:8px 0 22px; }
+.toolbar { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin:8px 0 22px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin-top:18px; }
+button {
+    background:var(--gold);
+    color:#111;
+    border:0;
+    border-radius:13px;
+    padding:13px 15px;
+    font-weight:bold;
+    cursor:pointer;
+    font-size:15px;
+    box-shadow:0 4px 12px rgba(0,0,0,.35);
+}
+button:hover { background:var(--gold2); }
+button.secondary { background:#333; color:var(--gold); border:1px solid var(--line); }
+button.secondary:hover { background:#444; }
+button.active { outline:3px solid rgba(255,255,255,.45); background:#fff1a6; }
+.footer { text-align:center; color:#aaa; margin-top:25px; font-size:13px; }
+@media (max-width:800px) {
+    .dashboard { grid-template-columns:1fr; }
+    h1 { font-size:34px; }
+    .now { font-size:24px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>📻 MWI DAB Server</h1>
+    <div class="sub">Digitaler DAB+-Stream · uGreen DAB Board · Icecast</div>
+
+    <div class="dashboard">
+      <div class="panel">
+        <div class="now" id="now">Noch kein Sender gewählt</div>
+        <div class="text" id="radiotext">Radiotext erscheint hier.</div>
+        <div class="small" id="status">Bereit.</div>
+      </div>
+
+      <div class="panel">
+        <div>
+          <span class="badge" id="ensemble">Ensemble: —</span>
+          <span class="badge" id="freq">Frequenz: —</span>
+          <span class="badge" id="valid">Signal: —</span>
+        </div>
+
+        <div class="metric">
+          <div class="metric-row"><span>RSSI</span><span id="rssiText">—</span></div>
+          <div class="bar"><div class="fill" id="rssiBar"></div></div>
+        </div>
+
+        <div class="metric">
+          <div class="metric-row"><span>SNR</span><span id="snrText">—</span></div>
+          <div class="bar"><div class="fill" id="snrBar"></div></div>
+        </div>
+
+        <div class="metric">
+          <div class="metric-row"><span>FIC-Qualität</span><span id="ficText">—</span></div>
+          <div class="bar"><div class="fill" id="ficBar"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="player" controls autoplay>
+      <source src="{{ stream_url }}" type="audio/mpeg">
+    </audio>
+
+    <div class="toolbar">
+      <button class="secondary" onclick="reloadPlayer()">🔄 Player neu laden</button>
+      <button class="secondary" onclick="refreshStatus()">📡 Status aktualisieren</button>
+      <button class="secondary" onclick="stopRadio()">■ Stop</button>
+    </div>
+
+    <div class="grid">
+      {% for s in stations %}
+      <button id="station-{{ loop.index0 }}" onclick="playStation({{ loop.index0 }})">{{ s.label }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="footer">
+      MWI DAB Server · Raspberry Pi Zero 2 W · uGreen DAB Board · Icecast
+    </div>
+  </div>
+</div>
+
+<script>
+function setStatus(text) {
+    document.getElementById("status").innerText = text;
+}
+
+function setBar(id, value, max) {
+    let pct = 0;
+    if (typeof value === "number") {
+        pct = Math.max(0, Math.min(100, (value / max) * 100));
+    }
+    document.getElementById(id).style.width = pct + "%";
+}
+
+function markActive(id) {
+    document.querySelectorAll(".grid button").forEach(b => b.classList.remove("active"));
+    const btn = document.getElementById("station-" + id);
+    if (btn) btn.classList.add("active");
+}
+
+function reloadPlayer() {
+    const audio = document.getElementById("player");
+    const source = audio.querySelector("source");
+    source.src = "{{ stream_url }}?t=" + Date.now();
+    audio.load();
+    audio.play().catch(() => {});
+}
+
+async function playStation(id) {
+    setStatus("Starte Sender...");
+    try {
+        const res = await fetch("/api/play/" + id, {method: "POST"});
+        const data = await res.json();
+
+        if (!data.ok) {
+            setStatus("Fehler: " + (data.error || "unbekannt"));
+            return;
+        }
+
+        document.getElementById("now").innerText = data.station.label;
+        markActive(id);
+        reloadPlayer();
+        setStatus("Läuft.");
+        setTimeout(refreshStatus, 1500);
+    } catch (e) {
+        setStatus("Fehler: " + e);
+    }
+}
+
+async function stopRadio() {
+    setStatus("Stoppe...");
+    await fetch("/api/stop", {method: "POST"});
+    document.getElementById("now").innerText = "Noch kein Sender gewählt";
+    document.getElementById("radiotext").innerText = "Radiotext erscheint hier.";
+    document.querySelectorAll(".grid button").forEach(b => b.classList.remove("active"));
+    setStatus("Gestoppt.");
+}
+
+async function refreshStatus() {
+    try {
+        const res = await fetch("/api/status?t=" + Date.now());
+        const data = await res.json();
+
+        const meta = data.metadata || {};
+        const dig = meta.digrad_status || {};
+        const ens = meta.ensemble_info || {};
+
+        if (data.current && data.current.label) {
+            document.getElementById("now").innerText = data.current.label;
+        }
+
+        document.getElementById("radiotext").innerText =
+            meta.station_text || "Kein Radiotext empfangen.";
+
+        document.getElementById("ensemble").innerText =
+            "Ensemble: " + (ens.label || "—");
+
+        document.getElementById("freq").innerText =
+            "Frequenz: " + (dig.tune_freq ? dig.tune_freq + " kHz" : "—");
+
+        document.getElementById("valid").innerText =
+            "Signal: " + (dig.valid === 1 ? "gültig" : "—");
+
+        document.getElementById("rssiText").innerText =
+            dig.rssi !== undefined ? dig.rssi : "—";
+        document.getElementById("snrText").innerText =
+            dig.snr !== undefined ? dig.snr + " dB" : "—";
+        document.getElementById("ficText").innerText =
+            dig.FIC_quality !== undefined ? dig.FIC_quality + "%" : "—";
+
+        setBar("rssiBar", dig.rssi, 80);
+        setBar("snrBar", dig.snr, 20);
+        setBar("ficBar", dig.FIC_quality, 100);
+
+        setStatus(data.stream_status && data.stream_status.running ? "Stream läuft." : "Bereit.");
+    } catch (e) {
+        setStatus("Statusfehler: " + e);
+    }
+}
+
+setInterval(refreshStatus, 5000);
+refreshStatus();
+</script>
+</body>
+</html>
