@@ -7,7 +7,7 @@ from config import ICECAST_URL, FLASK_HOST, FLASK_PORT
 from services.radio import load_stations, tune_station, shutdown_radio
 from services.metadata import get_metadata
 from services.stream import start_stream, stop_stream, stream_status
-from services.logos import logo_path_for_station, logo_slug
+from services.logos import logo_path_for_station
 
 app = Flask(__name__)
 
@@ -22,19 +22,6 @@ def index():
         stations=load_stations(),
         stream_url=ICECAST_URL,
     )
-
-
-
-@app.route("/logos")
-def logos():
-    stations = []
-    for station in load_stations():
-        item = dict(station)
-        item["slug"] = logo_slug(station["label"])
-        item["logo"] = logo_path_for_station(station["label"])
-        stations.append(item)
-
-    return render_template("logos.html", stations=stations)
 
 
 @app.route("/api/status")

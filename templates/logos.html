@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>MWI Logo Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+.logo-table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:24px;
+    color:#fff;
+}
+.logo-table th, .logo-table td {
+    border-bottom:1px solid rgba(255,211,77,.22);
+    padding:12px;
+    text-align:left;
+}
+.logo-preview {
+    width:120px;
+    height:55px;
+    object-fit:contain;
+    background:rgba(255,255,255,.06);
+    border-radius:10px;
+    padding:6px;
+}
+.ok { color:#9cff9c; font-weight:bold; }
+.missing { color:#ff9c9c; font-weight:bold; }
+.toplink { text-align:center; margin:18px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🖼️ MWI Logo Manager</h1>
+    <div class="sub">Senderlogos verwalten · Phase 3.2</div>
+
+    <div class="toplink">
+      <a href="/" style="color:#ffd34d;">← Zurück zum DAB Server</a>
+    </div>
+
+    <table class="logo-table">
+      <thead>
+        <tr>
+          <th>Sender</th>
+          <th>Dateiname</th>
+          <th>Logo</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for s in stations %}
+        <tr>
+          <td>{{ s.label }}</td>
+          <td>{{ s.slug }}.png</td>
+          <td>
+            {% if s.logo %}
+              <img class="logo-preview" src="{{ s.logo }}">
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>
+            {% if s.logo %}
+              <span class="ok">✅ vorhanden</span>
+            {% else %}
+              <span class="missing">❌ fehlt</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>
