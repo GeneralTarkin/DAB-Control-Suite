@@ -102,33 +102,3 @@ button.active { outline:3px solid rgba(255,255,255,.45); background:#fff1a6; }
     h1 { font-size:34px; }
     .now { font-size:24px; }
 }
-
-/* Phase 3.1 - Großes Senderlogo */
-.logoBox {
-    width: 260px;
-    height: 135px;
-    margin: 0 auto 22px auto;
-}
-
-.logoBox img {
-    max-width: 240px;
-    max-height: 115px;
-}
-
-#logoFallback {
-    font-size: 58px;
-}
-
-.panel:first-child {
-    text-align: center;
-}
-
-.panel:first-child .now {
-    font-size: 32px;
-    margin-top: 10px;
-}
-
-.panel:first-child .text {
-    font-size: 22px;
-    margin-top: 12px;
-}
