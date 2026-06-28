@@ -80,53 +80,9 @@ def get_ensemble_info():
     return info
 
 
-
-def parse_dls_text(text):
-    """
-    Einfache DLS/Dynamic-Label-Auswertung.
-    Viele Sender senden z.B.:
-    'Galantis mit No Money auf SUNSHINE LIVE'
-    oder 'Artist - Titel'.
-    """
-    if not text:
-        return {
-            "raw": "",
-            "artist": "",
-            "title": "",
-            "station_hint": "",
-        }
-
-    raw = text.strip()
-    artist = ""
-    title = ""
-    station_hint = ""
-
-    if " auf " in raw:
-        before, station_hint = raw.rsplit(" auf ", 1)
-    else:
-        before = raw
-
-    if " mit " in before:
-        artist, title = before.split(" mit ", 1)
-    elif " - " in before:
-        artist, title = before.split(" - ", 1)
-    elif " – " in before:
-        artist, title = before.split(" – ", 1)
-    else:
-        title = before
-
-    return {
-        "raw": raw,
-        "artist": artist.strip(),
-        "title": title.strip(),
-        "station_hint": station_hint.strip(),
-    }
-
 def get_metadata(waittime=2):
-    station_text = get_station_text(waittime=waittime)
     return {
-        "station_text": station_text,
-        "dls": parse_dls_text(station_text),
+        "station_text": get_station_text(waittime=waittime),
         "digrad_status": get_digrad_status(),
         "event_status": get_event_status(),
         "ensemble_info": get_ensemble_info(),

@@ -132,26 +132,3 @@ button.active { outline:3px solid rgba(255,255,255,.45); background:#fff1a6; }
     font-size: 22px;
     margin-top: 12px;
 }
-
-/* Phase 5 - DLS+ / Titelanzeige */
-.trackbox {
-    min-height: 70px;
-    margin: 14px 0 8px 0;
-}
-
-.artist {
-    color: #fff;
-    font-size: 24px;
-    font-weight: bold;
-}
-
-.title {
-    color: #ffd34d;
-    font-size: 28px;
-    font-weight: bold;
-    margin-top: 4px;
-}
-
-.text {
-    opacity: .9;
-}

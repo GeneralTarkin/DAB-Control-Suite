@@ -82,9 +82,6 @@ async function refreshStatus() {
             document.getElementById("now").innerText = data.current.label;
         }
 
-        const dls = meta.dls || {};
-        document.getElementById("artist").innerText = dls.artist || "";
-        document.getElementById("title").innerText = dls.title || "";
         document.getElementById("radiotext").innerText =
             meta.station_text || "Kein Radiotext empfangen.";
 
