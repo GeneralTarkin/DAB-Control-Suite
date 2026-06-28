@@ -16,10 +16,10 @@ def _run_radio_cli(args, timeout=8):
             ["sudo", RADIO_CLI] + args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            text=True,
             timeout=timeout,
         )
-        raw = result.stdout or b""
-        return raw.decode("latin-1", errors="replace")
+        return result.stdout or ""
     except Exception as exc:
         return f"ERROR: {exc}"
     finally:

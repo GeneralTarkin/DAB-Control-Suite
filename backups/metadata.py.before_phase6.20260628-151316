@@ -3,27 +3,20 @@ import json
 import re
 import subprocess
 from config import RADIO_CLI
-from services.locks import CLI_LOCK
 
 
 def _run_radio_cli(args, timeout=8):
-    acquired = CLI_LOCK.acquire(timeout=0.2)
-    if not acquired:
-        return ""
-
     try:
         result = subprocess.run(
             ["sudo", RADIO_CLI] + args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            text=True,
             timeout=timeout,
         )
-        raw = result.stdout or b""
-        return raw.decode("latin-1", errors="replace")
+        return result.stdout or ""
     except Exception as exc:
         return f"ERROR: {exc}"
-    finally:
-        CLI_LOCK.release()
 
 
 def _extract_json(text):

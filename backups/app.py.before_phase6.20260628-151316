@@ -8,7 +8,6 @@ from services.radio import load_stations, tune_station, shutdown_radio
 from services.metadata import get_metadata
 from services.stream import start_stream, stop_stream, stream_status
 from services.logos import logo_path_for_station, logo_slug
-from services.locks import CLI_LOCK
 
 app = Flask(__name__)
 
@@ -62,8 +61,7 @@ def api_play(index):
 
         with radio_lock:
             stop_stream()
-            with CLI_LOCK:
-                tune_station(station)
+            tune_station(station)
             start_stream()
             current_station = station
 
@@ -94,4 +92,4 @@ def api_stop():
 
 
 if __name__ == "__main__":
-    app.run(host=FLASK_HOST, port=FLASK_PORT, threaded=True)
+    app.run(host=FLASK_HOST, port=FLASK_PORT, threaded=False)
