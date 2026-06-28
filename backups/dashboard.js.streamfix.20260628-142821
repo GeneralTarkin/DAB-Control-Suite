@@ -1,76 +1,3 @@
-<!doctype html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<title>MWI DAB Server</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-
-</head>
-<body>
-<div class="wrap">
-  <div class="card">
-    <h1>📻 MWI DAB Server</h1>
-    <div class="sub">Digitaler DAB+-Stream · uGreen DAB Board · Icecast</div>
-
-    <div class="dashboard">
-      <div class="panel">
-        <div class="logoBox">
-          <img id="stationLogo" src="" alt="" style="display:none;">
-          <div id="logoFallback">📻</div>
-        </div>
-        <div class="now" id="now">Noch kein Sender gewählt</div>
-        <div class="text" id="radiotext">Radiotext erscheint hier.</div>
-        <div class="small" id="status">Bereit.</div>
-      </div>
-
-      <div class="panel">
-        <div>
-          <span class="badge" id="ensemble">Ensemble: —</span>
-          <span class="badge" id="freq">Frequenz: —</span>
-          <span class="badge" id="valid">Signal: —</span>
-        </div>
-
-        <div class="metric">
-          <div class="metric-row"><span>RSSI</span><span id="rssiText">—</span></div>
-          <div class="bar"><div class="fill" id="rssiBar"></div></div>
-        </div>
-
-        <div class="metric">
-          <div class="metric-row"><span>SNR</span><span id="snrText">—</span></div>
-          <div class="bar"><div class="fill" id="snrBar"></div></div>
-        </div>
-
-        <div class="metric">
-          <div class="metric-row"><span>FIC-Qualität</span><span id="ficText">—</span></div>
-          <div class="bar"><div class="fill" id="ficBar"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <audio id="player" controls autoplay>
-      <source src="{{ stream_url }}" type="audio/mpeg">
-    </audio>
-
-    <div class="toolbar">
-      <button class="secondary" onclick="reloadPlayer()">🔄 Player neu laden</button>
-      <button class="secondary" onclick="refreshStatus()">📡 Status aktualisieren</button>
-      <button class="secondary" onclick="stopRadio()">■ Stop</button>
-    </div>
-
-    <div class="grid">
-      {% for s in stations %}
-      <button id="station-{{ loop.index0 }}" onclick="playStation({{ loop.index0 }})">{{ s.label }}</button>
-      {% endfor %}
-    </div>
-
-    <div class="footer">
-      MWI DAB Server · Raspberry Pi Zero 2 W · uGreen DAB Board · Icecast
-    </div>
-  </div>
-</div>
-
-<script>
 function setStatus(text) {
     document.getElementById("status").innerText = text;
 }
@@ -92,7 +19,7 @@ function markActive(id) {
 function reloadPlayer() {
     const audio = document.getElementById("player");
     const source = audio.querySelector("source");
-    source.src = "{{ stream_url }}?t=" + Date.now();
+    source.src = window.MWI_STREAM_URL + "?t=" + Date.now();
     audio.load();
     audio.play().catch(() => {});
 }
@@ -158,5 +85,27 @@ async function refreshStatus() {
             "Ensemble: " + (ens.label || "—");
 
         document.getElementById("freq").innerText =
-            "Frequenz: " + (dig.tune_freq ? d<script>window.MWI_STREAM_URL = "{{ stream_url }}";</script>
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+            "Frequenz: " + (dig.tune_freq ? dig.tune_freq + " kHz" : "—");
+
+        document.getElementById("valid").innerText =
+            "Signal: " + (dig.valid === 1 ? "gültig" : "—");
+
+        document.getElementById("rssiText").innerText =
+            dig.rssi !== undefined ? dig.rssi : "—";
+        document.getElementById("snrText").innerText =
+            dig.snr !== undefined ? dig.snr + " dB" : "—";
+        document.getElementById("ficText").innerText =
+            dig.FIC_quality !== undefined ? dig.FIC_quality + "%" : "—";
+
+        setBar("rssiBar", dig.rssi, 80);
+        setBar("snrBar", dig.snr, 20);
+        setBar("ficBar", dig.FIC_quality, 100);
+
+        setStatus(data.stream_status && data.stream_status.running ? "Stream läuft." : "Bereit.");
+    } catch (e) {
+        setStatus("Statusfehler: " + e);
+    }
+}
+
+setInterval(refreshStatus, 5000);
+refreshStatus();
