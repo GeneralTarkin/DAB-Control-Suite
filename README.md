@@ -1,18 +1,15 @@
-# MWI DAB Server
+# DAB Control Center – GitHub Build Package
 
-Ein modularer DAB+-Streaming-Server für das Raspberry Pi DAB Board.
+This package contains the first runnable Windows application project for the
+DAB Control Suite and an automated GitHub Actions build.
 
-## Ziele
+## Included
 
-- DAB+-Empfang
-- MP3/Icecast Streaming
-- REST API
-- Weboberfläche
-- Songhistorie
-- Senderlogos
-- WordPress-Integration
-- Erweiterbare Architektur
+- Visual Studio solution
+- .NET 8 WPF application
+- Dark/gold dashboard
+- Live connection to `/api/status`
+- Self-contained Windows x64 publication
+- Automatic ZIP artifact on GitHub
 
-Status:
-
-Version 0.7.0-dev
+See `INTEGRATION.md` for the exact repository commands.

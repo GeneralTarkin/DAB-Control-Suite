@@ -1,55 +1,61 @@
+# ----------------------------------------------------
 # Python
+# ----------------------------------------------------
 __pycache__/
 *.py[cod]
 *.pyo
-
-# Logs and runtime output
-*.log
-*.out
-cache/
-backups/
-
-# Local backup files
-*.bak
-*.bak.*
-*.backup
-*.backup.*
-*~
-*.orig
-
-# Archives and generated packages
-*.zip
-*.tar
-*.tar.gz
-*.tgz
 
 # Python environments
 venv/
 .venv/
 
-# IDE
-.vscode/
+# ----------------------------------------------------
+# Runtime / Cache / Logs
+# ----------------------------------------------------
+cache/
+logs/
+artifacts/
+*.log
+*.out
+
+# ----------------------------------------------------
+# Build output (.NET)
+# ----------------------------------------------------
+bin/
+obj/
+
+# ----------------------------------------------------
+# Visual Studio
+# ----------------------------------------------------
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
 .idea/
 
+# ----------------------------------------------------
+# Backup files
+# ----------------------------------------------------
+*.bak
+*.bak.*
+*.backup
+*.backup.*
+*.orig
+*~
+
+# ----------------------------------------------------
+# Archives
+# ----------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# ----------------------------------------------------
 # System
-.DS_Store
+# ----------------------------------------------------
 Thumbs.db
-
-# Local runtime and scan data
-ensemblescan__.json
-
-# Local research and hardware reverse-engineering material
-mot_research/
-research/
-
-# Assembler/source experiments not part of the application
-dabboardradio.asm
-
-# Broken and manually retained intermediate files
-*.broken
-*.broken.*
-*.backup-*
-README_ADMIN_DASHBOARD_SELECTION.txt
-
-# Historical standalone application snapshots
-app_v[0-9]*.py
+.DS_Store

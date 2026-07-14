@@ -1,0 +1,71 @@
+name: Build DAB Control Center
+
+on:
+  push:
+    branches:
+      - main
+      - suite-restructure
+    paths:
+      - "desktop/windows/DABControlCenter/**"
+      - ".github/workflows/build-windows.yml"
+      - "DABControlSuite.sln"
+  pull_request:
+    paths:
+      - "desktop/windows/DABControlCenter/**"
+      - ".github/workflows/build-windows.yml"
+      - "DABControlSuite.sln"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Windows x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore DABControlSuite.sln
+
+      - name: Build
+        run: dotnet build DABControlSuite.sln --configuration Release --no-restore
+
+      - name: Publish self-contained EXE
+        shell: pwsh
+        run: |
+          dotnet publish `
+            desktop/windows/DABControlCenter/DABControlCenter.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            --output artifacts/DAB-Control-Center `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true
+
+      - name: Create ZIP package
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path artifacts/DAB-Control-Center/* `
+            -DestinationPath artifacts/DAB-Control-Center-win-x64.zip `
+            -Force
+
+      - name: Upload executable package
+        uses: actions/upload-artifact@v4
+        with:
+          name: DAB-Control-Center-win-x64
+          path: |
+            artifacts/DAB-Control-Center/
+            artifacts/DAB-Control-Center-win-x64.zip
+          if-no-files-found: error
+          retention-days: 30
