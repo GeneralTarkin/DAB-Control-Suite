@@ -257,13 +257,20 @@ def build_error_payload(exc):
     }
 
 
-while True:
-    try:
-        payload = build_metadata_payload()
-        last_cache_payload = payload
-        write_cache(payload)
+def main():
+    global last_cache_payload
 
-    except Exception as exc:
-        write_cache(build_error_payload(exc))
+    while True:
+        try:
+            payload = build_metadata_payload()
+            last_cache_payload = payload
+            write_cache(payload)
 
-    time.sleep(3)
+        except Exception as exc:
+            write_cache(build_error_payload(exc))
+
+        time.sleep(3)
+
+
+if __name__ == "__main__":
+    main()
