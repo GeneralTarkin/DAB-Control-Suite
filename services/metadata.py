@@ -1,120 +1,178 @@
-#!/usr/bin/env python3
 import json
 import re
 import subprocess
+import time
+from pathlib import Path
+
 from config import RADIO_CLI
-from services.locks import CLI_LOCK
+from services.locks import cli_file_lock
+from services.text_encoding import normalize_dab_text
 
 
-def _run_radio_cli(args, timeout=8):
-    acquired = CLI_LOCK.acquire(timeout=0.2)
-    if not acquired:
-        return ""
+CACHE = Path("cache")
+DEBUG_DIR = CACHE / "debug"
+DEBUG_DIR.mkdir(parents=True, exist_ok=True)
 
+METADATA_CACHE = CACHE / "metadata.json"
+DLS_CACHE = CACHE / "dls.json"
+ENSEMBLE_CACHE = CACHE / "ensemble.json"
+TUNING_LOCK = CACHE / "stream_tuning.lock"
+
+
+def _read_json(path, default):
     try:
-        result = subprocess.run(
-            ["sudo", RADIO_CLI] + args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            timeout=timeout,
-        )
-        raw = result.stdout or b""
-        return raw.decode("latin-1", errors="replace")
-    except Exception as exc:
-        return f"ERROR: {exc}"
-    finally:
-        CLI_LOCK.release()
-
-
-def _extract_json(text):
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
-        return None
-    try:
-        return json.loads(text[start:end + 1])
+        path = Path(path)
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8", errors="replace"))
     except Exception:
-        return None
+        pass
+    return default
 
 
-def get_station_text(waittime=3):
-    out = _run_radio_cli(["-D", "-z", str(waittime)], timeout=waittime + 4)
-    lines = [l.strip() for l in out.splitlines() if l.strip()]
-    noise = (
-        "Starting...",
-        "radio_cli",
-        "Please note:",
-        "SPI bus enabled.",
-        "Running with",
-    )
-    clean = [l for l in lines if not l.startswith(noise)]
-    return clean[-1] if clean else ""
+def tuning_in_progress(max_age=30):
+    try:
+        if not TUNING_LOCK.exists():
+            return False
+        ts = float(TUNING_LOCK.read_text(encoding="utf-8", errors="replace") or 0)
+        if time.time() - ts <= max_age:
+            return True
+        TUNING_LOCK.unlink(missing_ok=True)
+    except Exception:
+        pass
+    return False
+
+
+def fix_dab_text_encoding(text):
+    return normalize_dab_text(text)
+
+
+
+def _extract_json(raw):
+    if not raw:
+        return {}
+
+    text = raw.strip()
+    start_positions = [p for p in (text.find("{"), text.find("[")) if p >= 0]
+    if not start_positions:
+        return {}
+
+    candidate = text[min(start_positions):].strip()
+    decoder = json.JSONDecoder()
+
+    try:
+        obj, _ = decoder.raw_decode(candidate)
+        return obj if isinstance(obj, dict) else {}
+    except Exception:
+        return {}
+
+
+def _run_radio_json(args, timeout=5, lock_timeout=1.0):
+    if tuning_in_progress():
+        return {}
+
+    try:
+        with cli_file_lock(timeout=lock_timeout):
+            if tuning_in_progress():
+                return {}
+
+            result = subprocess.run(
+                ["sudo", RADIO_CLI] + list(args),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=timeout,
+            )
+
+        return _extract_json(result.stdout or "")
+
+    except Exception:
+        return {}
+
+def get_station_text(waittime=5, retries=4):
+    """Kompatibilität: DLS kommt ausschließlich aus cache/dls.json."""
+    data = _read_json(DLS_CACHE, {})
+    return normalize_dab_text(data.get("station_text") or "")
 
 
 def get_digrad_status():
-    out = _run_radio_cli(["-d", "-j"], timeout=6)
-    data = _extract_json(out)
-    if not data:
+    """Liest die aktuellen DIGRAD-Empfangswerte direkt über radio_cli."""
+    data = _run_radio_json(["-d", "-j"], timeout=4, lock_timeout=1.0)
+
+    if not isinstance(data, dict):
         return {}
-    return data.get("DigradStatus", {})
+
+    status = data.get("DigradStatus")
+    if isinstance(status, dict):
+        return status
+
+    return data
 
 
 def get_event_status():
-    out = _run_radio_cli(["-n", "-j"], timeout=6)
-    data = _extract_json(out)
-    if not data:
+    """Liest den aktuellen DAB-Ereignisstatus direkt über radio_cli."""
+    data = _run_radio_json(["-n", "-j"], timeout=4, lock_timeout=1.0)
+
+    if not isinstance(data, dict):
         return {}
-    return data.get("EventStatus", {})
+
+    status = data.get("EventStatus")
+    if isinstance(status, dict):
+        return status
+
+    return data
 
 
 def get_ensemble_info():
-    out = _run_radio_cli(["-G"], timeout=6)
+    """Liest Ensemble-Informationen aus cache/ensemble.json.
 
-    info = {}
-    for line in out.splitlines():
-        line = line.strip()
-        if line.startswith("Ensemble ID"):
-            m = re.search(r":\s*(.+)$", line)
-            if m:
-                info["ensemble_id"] = m.group(1).strip()
-        elif line.startswith("Label:"):
-            info["label"] = line.split(":", 1)[1].strip()
-        elif line.startswith("Extended Country Code"):
-            info["ecc"] = line.split(":", 1)[1].strip()
-        elif line.startswith("Label Abbreviation Mask"):
-            info["abrev"] = line.split(":", 1)[1].strip()
+    Der Ensemble-Name wird von workers/ensemble_worker.py nur bei Sender-/Ensemblewechsel
+    per radio_cli -G abgefragt. Diese Funktion selbst startet kein radio_cli.
+    """
+    data = _read_json(ENSEMBLE_CACHE, {})
+    label = normalize_dab_text(data.get("label") or "")
 
-    return info
+    if not label:
+        return {}
 
+    return {
+        "label": label,
+        "ensemble_id": data.get("ensemble_id", ""),
+        "ecc": data.get("ecc", ""),
+        "abrev": data.get("abrev", ""),
+        "station_index": data.get("station_index"),
+        "timestamp": data.get("timestamp"),
+    }
 
 
 def parse_dls_text(text):
-    """
-    Einfache DLS/Dynamic-Label-Auswertung.
-    Viele Sender senden z.B.:
-    'Galantis mit No Money auf SUNSHINE LIVE'
-    oder 'Artist - Titel'.
-    """
     if not text:
         return {
             "raw": "",
             "artist": "",
             "title": "",
-            "station_hint": "",
+            "station_hint": ""
         }
 
-    raw = text.strip()
+    raw = normalize_dab_text(text).strip()
     artist = ""
     title = ""
     station_hint = ""
 
+    before = raw
+
+    before = re.sub(
+        r"(?i)^\s*(gerade läuft|jetzt läuft|now playing|now|aktuell|on air)\s*:\s*",
+        "",
+        before,
+    )
+
     if " auf " in raw:
         before, station_hint = raw.rsplit(" auf ", 1)
-    else:
-        before = raw
 
     if " mit " in before:
-        artist, title = before.split(" mit ", 1)
+        title, artist = before.split(" mit ", 1)
     elif " - " in before:
         artist, title = before.split(" - ", 1)
     elif " – " in before:
@@ -126,11 +184,14 @@ def parse_dls_text(text):
         "raw": raw,
         "artist": artist.strip(),
         "title": title.strip(),
-        "station_hint": station_hint.strip(),
+        "station_hint": station_hint.strip()
     }
 
-def get_metadata(waittime=2):
-    station_text = get_station_text(waittime=waittime)
+
+def get_metadata(waittime=5):
+    """Kompatibilitätsfunktion ohne direkte Hardwarezugriffe."""
+    station_text = get_station_text()
+
     return {
         "station_text": station_text,
         "dls": parse_dls_text(station_text),

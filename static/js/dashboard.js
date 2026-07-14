@@ -52,8 +52,8 @@ async function playStation(id) {
         };
 
         markActive(id);
+        setStatus("Backend bereit. Stream wird verbunden...");
         reloadPlayer();
-        setStatus("Läuft.");
         setTimeout(refreshStatus, 1500);
     } catch (e) {
         setStatus("Fehler: " + e);
@@ -108,7 +108,9 @@ async function refreshStatus() {
         setBar("snrBar", dig.snr, 20);
         setBar("ficBar", dig.FIC_quality, 100);
 
-        setStatus(data.stream_status && data.stream_status.running ? "Stream läuft." : "Bereit.");
+        const audio = document.getElementById("player");
+        const isPlaying = audio && !audio.paused && !audio.ended;
+        setStatus(isPlaying ? "Wiedergabe läuft." : (data.stream_status && data.stream_status.running ? "Stream bereit." : "Bereit."));
     } catch (e) {
         setStatus("Statusfehler: " + e);
     }

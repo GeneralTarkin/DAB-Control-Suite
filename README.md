@@ -1,20 +1,18 @@
 # MWI DAB Server
 
-DAB+-Webradio auf Raspberry Pi Zero 2 W mit uGreen DAB Board.
+Ein modularer DAB+-Streaming-Server für das Raspberry Pi DAB Board.
 
-## Komponenten
+## Ziele
 
-- uGreen DAB Board
-- Si468x DAB-Empfänger
-- radio_cli
-- arecord
-- ffmpeg
-- Icecast2
-- Flask-Webinterface
+- DAB+-Empfang
+- MP3/Icecast Streaming
+- REST API
+- Weboberfläche
+- Songhistorie
+- Senderlogos
+- WordPress-Integration
+- Erweiterbare Architektur
 
-## Aktueller Stand
+Status:
 
-- DAB+-Senderliste aus ensemblescan__.json
-- Senderwechsel per Weboberfläche
-- I²S-Ausgabe
-- MP3-Stream über Icecast
+Version 0.7.0-dev

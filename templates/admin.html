@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>MWI DAB Server Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+:root{
+  --bg:#050505;
+  --panel:rgba(18,18,18,.88);
+  --panel2:rgba(255,255,255,.065);
+  --line:rgba(255,212,0,.28);
+  --line2:rgba(255,255,255,.12);
+  --yellow:#ffd400;
+  --green:#6dff8f;
+  --red:#ff6d6d;
+  --text:#f5f5f5;
+  --muted:rgba(245,245,245,.68);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 20% 0%,rgba(255,212,0,.18),transparent 32%),
+    radial-gradient(circle at 80% 10%,rgba(255,212,0,.08),transparent 28%),
+    linear-gradient(180deg,#151200 0%,#050505 42%,#020202 100%);
+  color:var(--text);
+  min-height:100vh;
+}
+
+.wrap{
+  max-width:1280px;
+  margin:0 auto;
+  padding:28px;
+}
+
+.hero{
+  border:1px solid var(--line);
+  border-radius:30px;
+  padding:28px;
+  background:linear-gradient(180deg,rgba(25,25,25,.92),rgba(8,8,8,.92));
+  box-shadow:0 24px 80px rgba(0,0,0,.55);
+}
+
+h1{
+  margin:0 0 8px;
+  color:var(--yellow);
+  font-size:34px;
+  letter-spacing:.2px;
+}
+
+h2{
+  color:var(--yellow);
+  margin:0 0 12px;
+  font-size:22px;
+}
+
+h3{
+  color:var(--yellow);
+}
+
+.muted{
+  color:var(--muted);
+}
+.row{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin:18px 0;
+  align-items:center;
+}
+
+.card{
+  background:linear-gradient(180deg,var(--panel2),rgba(255,255,255,.035));
+  border:1px solid var(--line2);
+  border-radius:22px;
+  padding:20px;
+  margin-top:18px;
+  box-shadow:0 14px 40px rgba(0,0,0,.28);
+}
+
+button,
+a.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  background:rgba(255,212,0,.12);
+  color:#fff;
+  border:1px solid rgba(255,212,0,.42);
+  border-radius:14px;
+  padding:11px 15px;
+  font-weight:700;
+  text-decoration:none;
+  cursor:pointer;
+  transition:.2s;
+}
+
+button:hover,
+a.btn:hover{
+  background:rgba(255,212,0,.22);
+  transform:translateY(-1px);
+}
+
+button.good{
+  background:rgba(109,255,143,.15);
+  border-color:rgba(109,255,143,.55);
+}
+
+button.danger{
+  background:rgba(255,90,90,.16);
+  border-color:rgba(255,90,90,.55);
+}
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+select,
+input{
+  padding:10px;
+  border-radius:12px;
+  background:#111;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.2);
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:16px;
+}
+
+th{
+  color:var(--yellow);
+  text-align:left;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+
+tr:hover td{
+  background:rgba(255,255,255,.03);
+}
+
+.ok{
+  color:var(--green);
+  font-weight:700;
+}
+
+.bad{
+  color:var(--red);
+  font-weight:700;
+}
+
+.warn{
+  color:var(--yellow);
+  font-weight:700;
+}
+
+.bar{
+  height:16px;
+  border-radius:999px;
+  overflow:hidden;
+  background:rgba(0,0,0,.45);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.bar span{
+  display:block;
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,var(--red),var(--yellow),var(--green));
+  transition:width .3s;
+}
+
+pre{
+  white-space:pre-wrap;
+  background:rgba(0,0,0,.42);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:14px;
+  max-height:340px;
+  overflow:auto;
+  color:#eee;
+}
+
+.small{
+  font-size:13px;
+  color:var(--muted);
+}
+
+audio{
+  width:100%;
+  margin-top:10px;
+}
+
+.logo-thumb{
+  width:58px;
+  height:58px;
+  object-fit:contain;
+  padding:6px;
+  background:rgba(0,0,0,.28);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;
+}
+
+.file-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.filename{
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  font-size:13px;
+}
+
+@media (max-width:900px){
+
+  .wrap{
+    padding:14px;
+  }
+
+  .hero{
+    padding:18px;
+    border-radius:20px;
+  }
+
+  h1{
+    font-size:28px;
+  }
+
+}
+
+</style>
+</head>
+<body>
+<div class="wrap"><div class="hero">
+  <h1>📻 MWI DAB Server Admin</h1>
+  <p class="muted">Admin-Panel 1.2 – Suchlauf, Dashboard-Auswahl und Logo-Verwaltung.</p>
+
+  <div class="row">
+    <button class="danger" id="scanBtn" onclick="startScan()">DAB-Suchlauf starten</button>
+    <a class="btn" href="/dab">Zum Dashboard</a>
+  </div>
+
+  <div class="card">
+    <h2>Suchlauf</h2>
+    <p class="muted">Hinweis: Ein Scan kann den laufenden Radioempfang unterbrechen. Nach erfolgreichem Suchlauf wird die vollständige Senderliste automatisch neu geladen. Das Dashboard zeigt weiterhin genau die Sender, die hier per Häkchen freigegeben sind.</p>
+    <p id="scanMessage" class="warn">Status wird geladen...</p>
+    <div class="bar"><span id="scanBar"></span></div>
+    <p class="small" id="scanDetails"></p>
+    <pre id="scanLog">Noch kein Log geladen.</pre>
+  </div>
+
+
+
+  <div class="card">
+    <h2>Aktuelle Senderliste</h2>
+    <p id="stationInfo">Lade...</p>
+    <table><thead><tr><th>#</th><th>Dashboard</th><th>Sender</th><th>Frequenz</th><th>Tune-Index</th><th>Service-ID</th><th>Component-ID</th><th>Aktion</th></tr></thead><tbody id="stations"></tbody></table>
+
+    <div class="card" style="margin-top:18px">
+      <h3 style="color:#ffd400;margin-top:0">🔊 Test-Wiedergabe</h3>
+      <p class="small" id="playStatus">Noch kein Testdienst gestartet.</p>
+      <audio id="adminPlayer" controls preload="none" style="width:100%; margin-top:8px"></audio>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Logo-Verwaltung</h2>
+    <p class="muted">Hier siehst du pro Sender den vom Backend berechneten PNG-Dateinamen. Fehlt ein Logo, wird automatisch <b>default.png</b> verwendet. Logos liegen im Backend unter <b>static/logos/</b>.</p>
+    <p id="logoInfo" class="small">Lade...</p>
+    <table><thead><tr><th>#</th><th>Sender</th><th>Vorschau</th><th>Dateiname</th><th>Status</th><th>PNG wählen</th></tr></thead><tbody id="logos"></tbody></table>
+    <p class="small">Hinweis: Der Upload-Button nutzt den Backend-Endpunkt <b>/dab-api/admin/logos/upload</b>. Dateiname und Logo-Pfad werden zentral vom Backend berechnet.</p>
+  </div>
+</div></div>
+
+<script>
+let pollTimer = null;
+
+let stationsCache = [];
+
+function esc(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function escAttr(v){return String(v ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");}
+
+
+
+function stationLogoPath(station){
+  const path = (station && (station.logo || station.logo_path)) ? (station.logo || station.logo_path) : '';
+  if (!path) return '/dab-api/logos/default.png';
+  if (path.startsWith('/api/logos/')) return '/dab-api/logos/' + path.split('/').pop();
+  if (path.startsWith('/static/logos/')) return '/dab-api/logos/' + path.split('/').pop();
+  return path;
+}
+
+function stationLogoFilename(station){
+  if (station && station.logo_filename) return station.logo_filename;
+  if (station && station.logo_slug) return station.logo_slug + '.png';
+  return 'default.png';
+}
+
+function formatFrequency(freq){
+  const n = Number(freq);
+  if (!Number.isFinite(n)) return freq ?? '';
+  if (n > 1000) return (n / 1000).toFixed(3) + ' MHz';
+  return n.toFixed(3) + ' MHz';
+}
+
+
+function renderLogoManagement(stations){
+  const logosEl = document.getElementById('logos');
+  const infoEl = document.getElementById('logoInfo');
+  if (!logosEl || !infoEl) return;
+  infoEl.innerHTML = `<span class="ok">${stations.length}</span> Sender für Logo-Zuordnung geladen.`;
+  logosEl.innerHTML = stations.map((s,i)=>{
+    const filename = stationLogoFilename(s);
+    const logoSrc = stationLogoPath(s);
+    const inputId = 'logoUpload_' + i;
+    const statusId = 'logoStatus_' + i;
+    const safeLabel = escAttr(s.label || 'Unbekannter Dienst');
+    const hasLogo = !!s.logo_exists;
+    const initialStatus = hasLogo ? 'vorhanden' : 'default.png';
+    const statusClass = hasLogo ? 'ok' : 'warn';
+    return `<tr>
+      <td>${i+1}</td>
+      <td><b>${esc(s.label)}</b></td>
+      <td><img class="logo-thumb" src="${esc(logoSrc)}?t=${Date.now()}" onload="setLogoStatus('${statusId}', ${hasLogo ? 'true' : 'false'})" onerror="this.onerror=null;this.src='/static/logos/default.png?t=${Date.now()}';setLogoStatus('${statusId}', false)" alt="Logo"></td>
+      <td class="filename">${esc(filename)}</td>
+      <td id="${statusId}" class="${statusClass}">${initialStatus}</td>
+      <td><div class="file-row"><input id="${inputId}" type="file" accept="image/png"><button onclick="uploadLogo('${inputId}', '${safeLabel}')">Hochladen</button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function setLogoStatus(id, found){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = found ? 'ok' : 'warn';
+  el.textContent = found ? 'vorhanden' : 'default.png';
+}
+
+async function uploadLogo(inputId, label){
+  const input = document.getElementById(inputId);
+  if (!input || !input.files || !input.files[0]) {
+    alert('Bitte zuerst eine PNG-Datei auswählen.');
+    return;
+  }
+  if (!input.files[0].name.toLowerCase().endsWith('.png')) {
+    alert('Bitte nur PNG-Dateien hochladen.');
+    return;
+  }
+  const form = new FormData();
+  form.append('station', label);
+  form.append('logo', input.files[0]);
+  const res = await fetch('/dab-api/admin/logos/upload', {method:'POST', body:form});
+  const text = await res.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch(e) {}
+  if (!res.ok || data.ok === false) {
+    alert((data && data.message) ? data.message : 'Upload fehlgeschlagen. Backend-Endpunkt /dab-api/admin/logos/upload prüfen.');
+    return;
+  }
+  alert(data.message || 'Logo wurde hochgeladen.');
+  await loadStations();
+}
+
+async function connectAdminPlayer(){
+  const status = await jsonFetch('/dab-api/status?t=' + Date.now());
+  const streamUrl = '/dab-api/stream';
+  const sep = streamUrl.includes('?') ? '&' : '?';
+  const freshUrl = streamUrl + sep + 'admin_test=' + Date.now();
+  const player = document.getElementById('adminPlayer');
+  player.src = freshUrl;
+  player.load();
+  try {
+    await player.play();
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+async function playStationService(tuneIndex, tuneFreq, serviceId, componentId, label){
+  if (!confirm(`Diesen Sender testweise starten?\n\n${label}\nService-ID: ${serviceId}\nComponent-ID: ${componentId}`)) return;
+  const statusEl = document.getElementById('playStatus');
+  statusEl.className = 'small warn';
+  statusEl.textContent = `Starte Testdienst ${label} ...`;
+
+  const data = await jsonFetch('/dab-api/admin/analyzer/play_service', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({tune_index:tuneIndex, tune_freq:tuneFreq, service_id:serviceId, component_id:componentId, label})
+  });
+
+  if (!data.ok) {
+    statusEl.className = 'small bad';
+    statusEl.textContent = data.message || 'Dienst konnte nicht gestartet werden.';
+    alert(statusEl.textContent);
+    return;
+  }
+
+  statusEl.textContent = 'Dienst gestartet. Verbinde Audio-Stream ...';
+  await new Promise(resolve => setTimeout(resolve, 1800));
+  const started = await connectAdminPlayer();
+
+  if (started) {
+    statusEl.className = 'small ok';
+    statusEl.textContent = `Läuft jetzt testweise: ${label}.`;
+  } else {
+    statusEl.className = 'small warn';
+    statusEl.textContent = `Dienst wurde gestartet: ${label}. Bitte im Audio-Player auf Play drücken.`;
+  }
+
+  loadStations().catch(()=>{});
+}
+
+async function jsonFetch(url, opts={}){
+  const res = await fetch(url, opts);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e){ throw new Error(`Keine JSON-Antwort von ${url}: ${text.slice(0,160)}`); }
+}
+
+async function toggleDashboardStation(dashboardKey, enabled, checkbox){
+  checkbox.disabled = true;
+  try {
+    const data = await jsonFetch('/dab-api/admin/dashboard/toggle', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({dashboard_key:dashboardKey, enabled:enabled})
+    });
+    if (!data.ok) throw new Error(data.message || 'Dashboard-Auswahl konnte nicht gespeichert werden.');
+    await loadStations();
+  } catch(e) {
+    checkbox.checked = !enabled;
+    alert(e.message || e);
+  } finally {
+    checkbox.disabled = false;
+  }
+}
+
+async function loadStations(){
+  const data = await jsonFetch('/dab-api/admin/stations?t=' + Date.now());
+  const info = data.scan_file_info || {};
+  const dashboard = data.dashboard_selection || {};
+  stationsCache = data.stations || [];
+  document.getElementById('stationInfo').innerHTML =
+    `<span class="ok">${data.count}</span> Sender geladen. ` +
+    `<span class="ok">${dashboard.enabled_count ?? '-'}</span> davon im Dashboard aktiv.<br>` +
+    `Scan-Datei: ${esc(data.scan_file)} | Größe: ${esc(info.size || '-')} Bytes | geändert: ${esc(info.mtime || '-')}`;
+  document.getElementById('stations').innerHTML = stationsCache.map((s,i)=>{
+    const freq = s.tune_freq ?? '';
+    const checked = s.dashboard_enabled ? 'checked' : '';
+    const dashboardKey = escAttr(s.dashboard_key || '');
+    const checkbox = `<input class="dashboard-check" type="checkbox" ${checked} title="Im Dashboard anzeigen" onchange="toggleDashboardStation('${dashboardKey}', this.checked, this)">`;
+    const btn = (s.tune_index != null && s.service_id != null && s.component_id != null)
+      ? `<button onclick="playStationService(${Number(s.tune_index)}, ${Number(freq || 0)}, ${Number(s.service_id)}, ${Number(s.component_id)}, '${escAttr(s.label || 'Unbekannter Dienst')}')">Testen</button>`
+      : '<span class="muted">-</span>';
+    return `<tr><td>${i+1}</td><td class="dashboard-cell">${checkbox}</td><td><b>${esc(s.label)}</b></td><td>${esc(formatFrequency(freq))}</td><td>${esc(s.tune_index)}</td><td>${esc(s.service_id)}</td><td>${esc(s.component_id)}</td><td>${btn}</td></tr>`;
+  }).join('');
+  renderLogoManagement(stationsCache);
+}
+
+function renderScan(state){
+  const running = !!state.running;
+  const ok = state.ok;
+  const phase = state.phase || 'idle';
+  const msg = state.message || 'Bereit.';
+  document.getElementById('scanMessage').className = running ? 'warn' : (ok ? 'ok' : (ok === false ? 'bad' : 'warn'));
+  document.getElementById('scanMessage').textContent = msg;
+  document.getElementById('scanBar').style.width = running ? '60%' : (ok ? '100%' : '0%');
+  document.getElementById('scanDetails').textContent =
+    `Phase: ${phase} | Start: ${state.started_at || '-'} | Ende: ${state.finished_at || '-'} | Backup: ${state.backup_file || '-'}`;
+  document.getElementById('scanLog').textContent = state.log_tail || 'Noch keine Ausgabe.';
+  const scanBtn = document.getElementById('scanBtn');
+  if (scanBtn) scanBtn.disabled = running;
+}
+
+async function loadScanStatus(){
+  const data = await jsonFetch('/dab-api/admin/scan/status?t=' + Date.now());
+  renderScan(data.state || {});
+  if ((data.state || {}).running) {
+    if (!pollTimer) pollTimer = setInterval(loadScanStatus, 2000);
+  } else {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    loadStations().catch(()=>{});
+  }
+}
+
+async function startScan(){
+  if (!confirm('DAB-Suchlauf wirklich starten? Der laufende Empfang kann kurz unterbrochen werden.')) return;
+  const data = await jsonFetch('/dab-api/admin/scan/start', {method:'POST'});
+  renderScan(data.state || {});
+  loadScanStatus();
+}
+
+
+loadStations().catch(e=>{document.getElementById('stationInfo').innerHTML='<span class="bad">Fehler:</span> '+esc(e.message)});
+loadScanStatus().catch(e=>{document.getElementById('scanMessage').textContent='Fehler: '+e.message; document.getElementById('scanMessage').className='bad';});
+</script>
+</body>
+</html>

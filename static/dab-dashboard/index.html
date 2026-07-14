@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>MWI DAB Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at top, #2b2600, #050505 55%);
+      color: #f5f5f5;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .hero {
+      border: 1px solid rgba(255, 215, 0, .35);
+      border-radius: 28px;
+      padding: 28px;
+      background: rgba(20, 20, 20, .82);
+      box-shadow: 0 0 35px rgba(255, 215, 0, .12);
+    }
+
+    .title {
+      font-size: 34px;
+      font-weight: 800;
+      color: #ffd400;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .equalizer span {
+      display: inline-block;
+      width: 5px;
+      margin: 0 2px;
+      background: #ffd400;
+      border-radius: 6px;
+      animation: pulse 1s infinite ease-in-out;
+    }
+
+    .equalizer span:nth-child(1) { height: 12px; animation-delay: .0s; }
+    .equalizer span:nth-child(2) { height: 22px; animation-delay: .1s; }
+    .equalizer span:nth-child(3) { height: 32px; animation-delay: .2s; }
+    .equalizer span:nth-child(4) { height: 18px; animation-delay: .3s; }
+    .equalizer span:nth-child(5) { height: 28px; animation-delay: .4s; }
+
+    @keyframes pulse {
+      50% { transform: scaleY(.35); opacity: .55; }
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 22px;
+      margin-top: 22px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 22px;
+      padding: 22px;
+    }
+
+    .live {
+      color: #6dff8f;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+
+    .station {
+      font-size: 30px;
+      font-weight: 800;
+      margin-top: 10px;
+    }
+
+    .radiotext {
+      font-size: 24px;
+      margin-top: 18px;
+      line-height: 1.35;
+    }
+
+    .small {
+      opacity: .68;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      padding: 10px 0;
+    }
+
+    .history-item {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+
+    .muted {
+      opacity: .55;
+    }
+
+    .station-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .station-button {
+      background: rgba(255, 212, 0, .10);
+      color: #f5f5f5;
+      border: 1px solid rgba(255, 212, 0, .28);
+      border-radius: 12px;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .station-button:hover {
+      background: rgba(255, 212, 0, .20);
+    }
+
+
+    .now-playing {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .track-title {
+      font-size: 28px;
+      font-weight: 850;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .track-artist {
+      margin-top: 6px;
+      font-size: 19px;
+      opacity: .82;
+    }
+
+    .status-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .pill.ok { color: #6dff8f; }
+    .pill.warn { color: #ffd400; }
+    .pill.bad { color: #ff6d6d; }
+
+    .bar {
+      width: 100%;
+      height: 9px;
+      margin-top: 7px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.10);
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ff6d6d, #ffd400, #6dff8f);
+      transition: width .35s ease;
+    }
+
+    .metric-block {
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      padding: 10px 0 13px;
+    }
+
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .station-button.active {
+      background: rgba(109, 255, 143, .16);
+      border-color: rgba(109, 255, 143, .55);
+      color: #ffffff;
+    }
+
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+      .title { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="title">
+        📻 MWI DAB Server
+        <div class="equalizer">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="live" id="live">● LIVE</div>
+          <div class="station" id="station">Lade Sender...</div>
+          <div class="now-playing">
+            <div class="track-title" id="tracktitle">Titel wird geladen...</div>
+            <div class="track-artist" id="trackartist">Interpret wird geladen...</div>
+          </div>
+
+          <div class="radiotext" id="radiotext">Radiotext wird geladen...</div>
+          <div class="small" id="state">Status wird geladen...</div>
+
+          <div class="status-row">
+            <span class="pill warn" id="dabpill">● DAB</span>
+            <span class="pill warn" id="streampill">● Stream</span>
+            <span class="pill warn" id="icepill">● Icecast</span>
+            <span class="pill warn" id="bufferpill">● Audio</span>
+            <span class="pill warn" id="dlspill">● DLS</span>
+          </div>
+
+          <audio id="player" controls style="width:100%; margin-top:22px;">
+            <source src="/dab-api/stream" type="audio/mpeg">
+            Dein Browser unterstützt keinen Audio-Player.
+          </audio>
+        </div>
+
+        <div class="card">
+          <h3>📡 Empfang</h3>
+          <div class="metric-block">
+            <div class="metric-top"><span>RSSI</span><strong id="rssi">-</strong></div>
+            <div class="bar"><span id="rssibar"></span></div>
+          </div>
+          <div class="metric-block">
+            <div class="metric-top"><span>SNR</span><strong id="snr">-</strong></div>
+            <div class="bar"><span id="snrbar"></span></div>
+          </div>
+          <div class="metric-block">
+            <div class="metric-top"><span>FIC</span><strong id="fic">-</strong></div>
+            <div class="bar"><span id="ficbar"></span></div>
+          </div>
+          <div class="metric"><span>DLS-Alter</span><strong id="dlsage">-</strong></div>
+        </div>
+
+        <div class="card">
+          <h3>🎵 Song-Historie</h3>
+          <div id="history" class="muted">Noch keine Songs erkannt.</div>
+        </div>
+
+        <div class="card">
+          <h3>🧠 Metadata Engine</h3>
+          <div class="metric"><span>DLS Quelle</span><strong id="dlssource">-</strong></div>
+          <div class="metric"><span>Leere Abrufe</span><strong id="emptycount">-</strong></div>
+          <div class="metric"><span>Service aktiv</span><strong id="serviceactive">-</strong></div>
+        </div>
+
+        <div class="card">
+          <h3>📻 Senderauswahl</h3>
+          <div id="stationlist" class="station-list muted">Sender werden geladen...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+let lastSeenStationIndex = null;
+let autoplayTried = false;
+let isSwitchingStation = false;
+let waitingForFreshMetadata = false;
+let switchingTargetLabel = '';
+let switchingTargetIndex = null;
+let blockedStationText = '';
+let switchStartedAt = 0;
+
+function normalizeClientText(value) {
+  let text = String(value ?? '');
+  text = text.replace(/gerade\s+l\s*0x\s*uft\s*:/ig, 'gerade läuft:');
+  text = text.replace(/jetzt\s+l\s*0x\s*uft\s*:/ig, 'jetzt läuft:');
+  text = text.replace(/l\s*0x\s*uft/ig, 'läuft');
+  text = text.replace(/l�uft/g, 'läuft');
+  text = text.replace(/f�r/g, 'für').replace(/F�r/g, 'Für');
+  text = text.replace(/gr��e/g, 'größe').replace(/Gr��e/g, 'Größe');
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+function getDisplayedRadiotext() {
+  const value = document.getElementById('radiotext')?.textContent || '';
+  if (
+    value.includes('Radiotext wird') ||
+    value.includes('Kein Radiotext') ||
+    value.includes('Dashboard konnte')
+  ) {
+    return '';
+  }
+  return normalizeClientText(value);
+}
+
+function hasFreshMetadata(m, state) {
+  const text = normalizeClientText(m.station_text || '');
+  const blocked = normalizeClientText(blockedStationText || '');
+
+  if (!text) return false;
+
+  // Hauptschutz: Der alte Radiotext darf während des Umschaltens nicht zurückkommen.
+  if (blocked && text === blocked) return false;
+
+  // Zusätzlicher Plausibilitätscheck: Wenn der Worker ein DLS-Alter liefert,
+  // akzeptieren wir bevorzugt frische Werte.
+  const age = Number(state?.dls_age_seconds);
+  if (Number.isFinite(age) && age > 15) return false;
+
+  return true;
+}
+
+function resetNowPlaying() {
+  document.getElementById('station').textContent = switchingTargetLabel || 'Senderwechsel läuft...';
+
+  document.getElementById('tracktitle').textContent = 'Kein Titel erkannt';
+  document.getElementById('trackartist').textContent = '';
+  document.getElementById('radiotext').textContent = 'Radiotext wird neu geladen...';
+  document.getElementById('state').textContent = 'Senderwechsel läuft...';
+
+  document.getElementById('rssi').textContent = '-';
+  document.getElementById('snr').textContent = '-';
+  document.getElementById('fic').textContent = '-';
+  document.getElementById('dlsage').textContent = '-';
+
+  setBar('rssibar', 0, 100);
+  setBar('snrbar', 0, 30);
+  setBar('ficbar', 0, 100);
+
+  setPill('dabpill', false, 'DAB');
+  setPill('streampill', false, 'Stream');
+  setPill('icepill', false, 'Icecast');
+  setPill('dlspill', false, 'DLS');
+
+  document.getElementById('dlssource').textContent = '-';
+  document.getElementById('emptycount').textContent = '-';
+  document.getElementById('serviceactive').textContent = '-';
+
+  const historyBox = document.getElementById('history');
+  if (historyBox) {
+    historyBox.textContent = 'Noch keine Songs erkannt.';
+    historyBox.className = 'muted';
+  }
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function setBar(id, value, max) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const pct = value == null ? 0 : clamp((Number(value) / max) * 100, 0, 100);
+  el.style.width = pct + '%';
+}
+
+function setPill(id, ok, label) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'pill ' + (ok ? 'ok' : 'bad');
+  el.textContent = '● ' + label;
+}
+
+function setPillMode(id, mode, label) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'pill ' + mode;
+  el.textContent = '● ' + label;
+}
+
+function setBufferPill(mode) {
+  if (mode === 'buffering') {
+    setPillMode('bufferpill', 'warn', 'Stream verbindet');
+  } else if (mode === 'live') {
+    setPillMode('bufferpill', 'ok', 'Live');
+  } else if (mode === 'manual') {
+    setPillMode('bufferpill', 'warn', 'Play drücken');
+  } else {
+    setPillMode('bufferpill', 'bad', 'Audio');
+  }
+}
+
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[c]));
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function liveStreamUrl(streamUrl) {
+  const sep = streamUrl.includes('?') ? '&' : '?';
+  return streamUrl + sep + 'live=' + Date.now();
+}
+
+function rebuildPlayer(streamUrl) {
+  const oldPlayer = document.getElementById('player');
+  if (!oldPlayer || !streamUrl) return null;
+
+  const newPlayer = document.createElement('audio');
+  newPlayer.id = 'player';
+  newPlayer.controls = true;
+  newPlayer.style.width = '100%';
+  newPlayer.style.marginTop = '22px';
+  newPlayer.preload = 'none';
+
+  newPlayer.addEventListener('waiting', () => setBufferPill('buffering'));
+  newPlayer.addEventListener('stalled', () => setBufferPill('buffering'));
+  newPlayer.addEventListener('loadstart', () => setBufferPill('buffering'));
+  newPlayer.addEventListener('playing', () => setBufferPill('live'));
+
+  const source = document.createElement('source');
+  source.src = liveStreamUrl(streamUrl);
+  source.type = 'audio/mpeg';
+
+  newPlayer.appendChild(source);
+  newPlayer.appendChild(document.createTextNode('Dein Browser unterstützt keinen Audio-Player.'));
+
+  oldPlayer.pause();
+  oldPlayer.removeAttribute('src');
+  oldPlayer.innerHTML = '';
+  oldPlayer.load();
+  oldPlayer.replaceWith(newPlayer);
+
+  newPlayer.load();
+  return newPlayer;
+}
+
+async function connectAndMaybePlay(streamUrl, autoplay) {
+  const player = rebuildPlayer(streamUrl);
+  if (!player) return false;
+
+  player.dataset.loaded = '1';
+
+  if (!autoplay) {
+    player.addEventListener('play', () => {
+      const source = player.querySelector('source');
+      if (source && streamUrl) {
+        source.src = liveStreamUrl(streamUrl);
+        player.load();
+        player.play().catch(() => {});
+      }
+    }, { once: true });
+    return false;
+  }
+
+  try {
+    await player.play();
+    return true;
+  } catch (e) {
+    player.addEventListener('play', () => {
+      const source = player.querySelector('source');
+      if (source && streamUrl) {
+        source.src = liveStreamUrl(streamUrl);
+        player.load();
+        player.play().catch(() => {});
+      }
+    }, { once: true });
+    return false;
+  }
+}
+
+async function loadStations() {
+  try {
+    const res = await fetch('/api/stations?t=' + Date.now());
+    const stations = await res.json();
+    const box = document.getElementById('stationlist');
+
+    box.className = 'station-list';
+    const statusRes = await fetch('/api/status?t=' + Date.now());
+    const statusJson = await statusRes.json();
+    const currentIndex = statusJson.current_index;
+
+    box.innerHTML = stations.map((st, i) => `
+      <button class="station-button ${i === currentIndex ? 'active' : ''}" onclick="playStation(${i})">
+        ${escapeHtml(st.label)}
+      </button>
+    `).join('');
+  } catch (e) {
+    document.getElementById('stationlist').textContent = 'Sender konnten nicht geladen werden.';
+  }
+}
+
+async function playStation(index) {
+  const box = document.getElementById('state');
+
+  blockedStationText = getDisplayedRadiotext();
+  isSwitchingStation = true;
+  waitingForFreshMetadata = true;
+  switchingTargetLabel = '';
+  switchingTargetIndex = index;
+  switchStartedAt = Date.now();
+  resetNowPlaying();
+
+  autoplayTried = true;
+  box.textContent = 'Sender wird abgestimmt...';
+  setBufferPill('buffering');
+
+  document.querySelectorAll('.station-button').forEach(btn => {
+    btn.disabled = true;
+    btn.style.opacity = '.55';
+  });
+
+  const oldPlayer = document.getElementById('player');
+  if (oldPlayer) {
+    oldPlayer.pause();
+    oldPlayer.removeAttribute('src');
+    oldPlayer.innerHTML = '';
+    oldPlayer.load();
+  }
+
+  try {
+    const res = await fetch('/api/play/' + index, { method: 'POST' });
+    const data = await res.json();
+
+    if (!data.ok) {
+      box.textContent = 'Senderwechsel fehlgeschlagen: ' + (data.error || 'Unbekannter Fehler');
+      isSwitchingStation = false;
+      waitingForFreshMetadata = false;
+      return;
+    }
+
+    switchingTargetLabel = (data.station && data.station.label) ? data.station.label : '';
+    if (switchingTargetLabel) {
+      document.getElementById('station').textContent = switchingTargetLabel;
+    }
+
+    box.textContent = 'Backend bereit. Stream wird verbunden...';
+    setBufferPill('buffering');
+    await sleep(3000);
+
+    const freshStatus = await fetch('/api/status?t=' + Date.now());
+    const statusJson = await freshStatus.json();
+    const streamUrl = statusJson.stream || data.stream;
+
+    const started = await connectAndMaybePlay(streamUrl, true);
+
+    isSwitchingStation = false;
+
+    await loadStations();
+    await loadDashboard();
+
+    if (waitingForFreshMetadata) {
+      if (!started) setBufferPill('manual');
+      box.textContent = started
+        ? 'Stream läuft. Warte auf neuen Radiotext...'
+        : 'Sender bereit. Bitte Play drücken. Warte auf neuen Radiotext...';
+    } else {
+      if (!started) setBufferPill('manual');
+      box.textContent = started
+        ? 'Stream läuft.'
+        : 'Sender bereit. Bitte Play drücken.';
+    }
+
+  } catch (e) {
+    box.textContent = 'Senderwechsel fehlgeschlagen.';
+    isSwitchingStation = false;
+    waitingForFreshMetadata = false;
+  } finally {
+    document.querySelectorAll('.station-button').forEach(btn => {
+      btn.disabled = false;
+      btn.style.opacity = '';
+    });
+  }
+}
+
+async function loadDashboard() {
+  try {
+    const statusRes = await fetch('/api/status?t=' + Date.now());
+    const statusJson = await statusRes.json();
+    const currentStation = statusJson.current || {};
+    const currentIndex = statusJson.current_index;
+    const streamUrl = statusJson.stream || '';
+    const streamStatus = statusJson.stream_status || {};
+
+    if (isSwitchingStation) {
+      if (switchingTargetLabel) {
+        document.getElementById('station').textContent = switchingTargetLabel;
+      }
+      return;
+    }
+
+    const metaRes = await fetch('/api/metadata?t=' + Date.now());
+    const metaJson = await metaRes.json();
+    const m = metaJson.metadata || {};
+    const state = m.radio_state || {};
+
+    if (waitingForFreshMetadata) {
+      const timeoutReached = Date.now() - switchStartedAt > 25000;
+
+      if (!hasFreshMetadata(m, state) && !timeoutReached) {
+        document.getElementById('station').textContent = switchingTargetLabel || currentStation.label || 'MWI DAB';
+        document.getElementById('state').textContent = 'Warte auf neuen Radiotext...';
+        setPill('streampill', !!streamStatus.process_running, 'Stream');
+        setPill('icepill', !!streamStatus.icecast_mount_alive, 'Icecast');
+        return;
+      }
+
+      waitingForFreshMetadata = false;
+      blockedStationText = '';
+      switchingTargetIndex = null;
+      switchingTargetLabel = '';
+    }
+
+    if (currentIndex !== null && currentIndex !== lastSeenStationIndex) {
+      lastSeenStationIndex = currentIndex;
+      resetNowPlaying();
+    }
+
+    document.getElementById('station').textContent =
+      currentStation.label || 'MWI DAB';
+
+    const player = document.getElementById('player');
+    if (player && streamUrl && !player.dataset.loaded) {
+      await connectAndMaybePlay(streamUrl, false);
+    }
+
+    autoplayTried = true;
+
+    const parsed = m.dls || {};
+    const stationText = normalizeClientText(m.station_text || '');
+    const parsedTitle = normalizeClientText(parsed.title || '');
+    const parsedArtist = normalizeClientText(parsed.artist || '');
+
+    document.getElementById('tracktitle').textContent =
+      parsedTitle || stationText || 'Kein Titel erkannt';
+    document.getElementById('trackartist').textContent =
+      parsedArtist || currentStation.label || 'Unbekannter Interpret';
+
+    document.getElementById('radiotext').textContent =
+      stationText || 'Kein Radiotext verfügbar';
+
+    document.getElementById('state').textContent =
+      state.has_dls ? 'Radiotext aktiv' : 'Noch kein Radiotext empfangen';
+
+    const d = m.digrad_status || {};
+    document.getElementById('rssi').textContent = d.rssi ?? '-';
+    document.getElementById('snr').textContent = d.snr ?? '-';
+    document.getElementById('fic').textContent = d.FIC_quality != null ? d.FIC_quality + ' %' : '-';
+    document.getElementById('dlsage').textContent =
+      state.dls_age_seconds != null ? state.dls_age_seconds + ' s' : '-';
+
+    setBar('rssibar', d.rssi, 100);
+    setBar('snrbar', d.snr, 30);
+    setBar('ficbar', d.FIC_quality, 100);
+
+    const dabLooksActive =
+      !!state.service_active ||
+      d.valid === 1 ||
+      d.acq === 1 ||
+      Number(d.FIC_quality || 0) > 0 ||
+      Number(d.snr || 0) > 0 ||
+      Number(d.rssi || 0) > 0;
+
+    setPill('dabpill', dabLooksActive, 'DAB');
+    setPill('streampill', !!streamStatus.process_running, 'Stream');
+    setPill('icepill', !!streamStatus.icecast_mount_alive, 'Icecast');
+    setPill('dlspill', !!state.has_dls, 'DLS');
+
+    document.getElementById('dlssource').textContent = state.dls_source || '-';
+    document.getElementById('emptycount').textContent = state.dls_empty_count ?? '-';
+    document.getElementById('serviceactive').textContent = state.service_active ? 'Ja' : 'Nein';
+
+    const histRes = await fetch('/api/history?t=' + Date.now());
+    const history = await histRes.json();
+
+    const box = document.getElementById('history');
+    if (!history || history.length === 0) {
+      box.textContent = 'Noch keine Songs erkannt.';
+      box.className = 'muted';
+    } else {
+      box.className = '';
+      box.innerHTML = history.slice(-8).reverse().map(s => `
+        <div class="history-item">
+          <strong>${escapeHtml(normalizeClientText(s.artist || ''))}</strong><br>
+          ${escapeHtml(normalizeClientText(s.title || ''))}<br>
+          <span class="small">${escapeHtml(s.time || '')}</span>
+        </div>
+      `).join('');
+    }
+  } catch (e) {
+    document.getElementById('radiotext').textContent = 'Dashboard konnte keine API-Daten laden.';
+  }
+}
+
+loadStations();
+loadDashboard();
+setInterval(loadDashboard, 3000);
+setInterval(loadStations, 10000);
+</script>
+</body>
+</html>
